@@ -1,4 +1,4 @@
-import { UsersList } from './users.list';
+import { Sequelize, DataTypes, Op } from 'sequelize';
 import { Router } from 'express';
 import User from './user.type';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +9,39 @@ import {
     ValidatedRequestSchema,
     createValidator
 } from 'express-joi-validation';
+
+const sequelize = new Sequelize('nodejs-mentoring', 'postgres', 'aw3se4', {
+    host: 'localhost',
+    dialect: 'postgres'
+});
+const Users = sequelize.define('Users', {
+    user_uid: {
+        type: DataTypes.UUIDV4,
+        allowNull: false,
+        primaryKey: true,
+    },
+    login: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    age: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    isdeleted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    }
+}, {
+    tableName: 'users',
+    underscored: false,
+    timestamps: false
+});
 
 interface UserRequestSchema extends ValidatedRequestSchema {
     [ContainerTypes.Body]: {
@@ -25,7 +58,7 @@ const bodySchema = Joi.object({
     password: Joi.string().pattern(new RegExp('^[a-zA-Z0-9]{3,30}$')).required(),
     age: Joi.number().integer().min(4).max(130).required()
 });
-const compare = (a:User, b:User): number => {
+const compare = (a:any, b:any): number => {
     const loginA = a.login.toUpperCase();
     const loginB = b.login.toUpperCase();
 
@@ -37,56 +70,78 @@ const compare = (a:User, b:User): number => {
     }
     return comparison;
 }
-const getAutoSuggestUsers = (loginSubstring:string = '', limit:number):User[] => {
-    let users:User[] = UsersList.filter(user => !user.isDeleted);
-    if(loginSubstring) {
-        users = users.filter(user => user.login.includes(loginSubstring));
-    }
-    if(limit) {
-        users = users.slice(0, +limit);
-    }
-    return users.sort(compare);
+const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => { //User[]
+    let options = {
+        where: {
+            isdeleted: {
+                [Op.eq]: false
+            },
+            login: {
+                [Op.substring]: loginSubstring || ''
+            }
+        },
+        order: Sequelize.col('login'),
+        limit: limit || undefined
+    };
+    
+    return await Users.findAll(options);
 }
 
-usersRouter.get('/', (req, res) => {
+usersRouter.get('/', async (req, res) => {
     const { loginSubstring, limit } = req.query;
-    return res.json(getAutoSuggestUsers(loginSubstring?.toString(), limit ? +limit.toString() : 0));
+    return res.json(await getAutoSuggestUsers(loginSubstring?.toString(), limit ? +limit.toString() : 0));
 });
 usersRouter.post('/', validator.body(bodySchema), (req: ValidatedRequest<UserRequestSchema>, res) => {
     const user: User = {
-        id: uuidv4(),
+        user_uid: uuidv4(),
         ...req.body,
-        isDeleted: false
+        isdeleted: false
     };
-    UsersList.push(user);
+    Users.create(user);
     return res.json(user);
 });
 
-usersRouter.get('/:userId', (req, res) => {
+usersRouter.get('/:userId', async (req, res) => {
     const { userId } = req.params;
-    const user = UsersList.filter(user => user.id === userId);
-    return res.json(user.length > 0 ? user[0] : {error: 404, message: 'User not founded'});
+    try{
+        const user = await Users.findOne({
+            where: {
+                user_uid: userId
+            }
+        });
+        return res.json(user || {error: 404, message: "User is not exists"});
+    } catch (err) {
+        return {error: 500, message: err};
+    }
 });
-usersRouter.put('/:userId', (req, res) => {
+usersRouter.put('/:userId', async (req, res) => {
     const { userId } = req.params;
     const { login, age, password } = req.body;
-    const user = UsersList.filter(user => user.id === userId);
-    if (user.length > 0) {
-        user[0].login = login;
-        user[0].age = age;
-        user[0].password = password;
-        return res.json(user[0]);
+    
+    try{
+        const user = await Users.update({ login, age, password }, {
+            where: {
+                user_uid: userId
+            }
+        });
+        return res.json(user || {error: 404, message: "User is not exists"});
+    } catch (err) {
+        return {error: 500, message: err};
     }
-    return res.json({error: 404, message: 'User not founded'});
 });
-usersRouter.delete('/:userId', (req, res) => {
+usersRouter.delete('/:userId', async (req, res) => {
     const { userId } = req.params;
-    const user = UsersList.filter(user => user.id === userId);
-    if (user.length > 0) {
-        user[0].isDeleted = true;
-        return res.json(user[0]);
+    
+    try{
+        const user = await Users.update({ isdeleted: true }, {
+            where: {
+                user_uid: userId
+            }
+        });
+        return res.json(user || {error: 404, message: "User is not exists"});
+    } catch (err) {
+        return {error: 500, message: err};
     }
-    return res.json({error: 404, message: 'User not founded'});
 });
 
 export default usersRouter;
