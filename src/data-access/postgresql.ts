@@ -32,3 +32,22 @@ export const Users = sequelize.define('Users', {
     underscored: false,
     timestamps: false
 });
+export const Groups = sequelize.define('Groups', {
+    group_uid: {
+        type: DataTypes.UUIDV4,
+        allowNull: false,
+        primaryKey: true,
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    permissions: {
+        type: DataTypes.ARRAY(DataTypes.STRING),
+        allowNull: false
+    }
+}, {
+    tableName: 'groups',
+    underscored: false,
+    timestamps: false
+});

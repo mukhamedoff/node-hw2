@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 import usersRouter from './routers/users.routing';
+import groupsRouter from './routers/groups.routing';
 
 const sslOptions = {
     key: fs.readFileSync('key.pem'),
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
 })
 app.use('/users', usersRouter);
+app.use('/groups', groupsRouter);
 
 https.createServer(sslOptions, app).listen(PORT, () => {
     console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);

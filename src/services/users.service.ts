@@ -1,6 +1,6 @@
 import { Sequelize, Op } from 'sequelize';
-import { Users as UsersSchema} from '../data-access/postgresql';
-import User from '../models/user.type';
+import { Users as UsersSchema, sequelize as sequelizeInstance} from '../data-access/postgresql';
+import User from '../models/users/user.type';
 
 const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => { //User[]
     let options = {
@@ -23,12 +23,36 @@ const createUser = (user: User) => {
     UsersSchema.create(user);
 }
 
-const updateUser = async (id: number, data:{ login?:string; age?:number; password?:string; isdeleted?:boolean }) => {
+const updateUser = async (
+    id: number,
+    data:{ login?:string; age?:number; password?:string; isdeleted?:boolean },
+    options?: {}
+    ) => {
     return await UsersSchema.update(data, {
         where: {
             user_uid: id
-        }
+        },
+        ...options
     });
+}
+
+const deleteUser = async (id: number) => {
+    let result = null;
+    const query = `
+    DELETE FROM user_group WHERE user_id='${id}';
+    `;
+
+    sequelizeInstance.transaction(async transaction => {
+        try {
+            await sequelizeInstance.query(query, { transaction });
+            await updateUser(id, { isdeleted: true }, { transaction });
+            result = Promise.resolve({ message: "Delete is done" });
+        } catch (error) {
+            transaction.rollback();
+        }
+    })
+
+    return await result;
 }
 
 const findById = async (id: number) => {
@@ -39,9 +63,30 @@ const findById = async (id: number) => {
     });
 }
 
+const addUsersToGroup = async (groupId:number, userId:number) => {
+    let result = null;
+    const query = `
+    INSERT INTO user_group (group_id, user_id)
+    VALUES ('${groupId}', '${userId}')
+    `;
+
+    sequelizeInstance.transaction(async transaction => {
+        try {
+            const [results, metadata] = await sequelizeInstance.query(query, {transaction});
+            result = Promise.resolve({results, metadata});
+        } catch (error) {
+            transaction.rollback();
+        }
+    })
+
+    return await result;
+}
+
 export default {
     getAutoSuggestUsers,
     createUser,
     findById,
-    updateUser
+    updateUser,
+    deleteUser,
+    addUsersToGroup
 }
