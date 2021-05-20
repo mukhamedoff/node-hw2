@@ -1,5 +1,9 @@
 import { Sequelize, Op } from 'sequelize';
-import { Users as UsersSchema, sequelize as sequelizeInstance} from '../data-access/postgresql';
+import {
+    Users as UsersSchema,
+    sequelize as sequelizeInstance,
+    UserGroup as UserGroupSchema
+} from '../data-access/postgresql';
 import User from '../models/users/user.type';
 
 const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => { //User[]
@@ -37,22 +41,22 @@ const updateUser = async (
 }
 
 const deleteUser = async (id: number) => {
-    let result = null;
-    const query = `
-    DELETE FROM user_group WHERE user_id='${id}';
-    `;
-
-    sequelizeInstance.transaction(async transaction => {
-        try {
-            await sequelizeInstance.query(query, { transaction });
-            await updateUser(id, { isdeleted: true }, { transaction });
-            result = Promise.resolve({ message: "Delete is done" });
-        } catch (error) {
-            transaction.rollback();
-        }
+    return new Promise((resolve, reject) => {
+        sequelizeInstance.transaction(async transaction => {
+            try {
+                await UserGroupSchema.destroy({
+                    where: {
+                        user_id: id
+                    },
+                    transaction
+                });
+                await updateUser(id, { isdeleted: true }, { transaction });
+                resolve({ message: "Delete is done" });
+            } catch (error) {
+                transaction.rollback();
+            }
+        });
     })
-
-    return await result;
 }
 
 const findById = async (id: number) => {
@@ -64,22 +68,16 @@ const findById = async (id: number) => {
 }
 
 const addUsersToGroup = async (groupId:number, userId:number) => {
-    let result = null;
-    const query = `
-    INSERT INTO user_group (group_id, user_id)
-    VALUES ('${groupId}', '${userId}')
-    `;
-
     sequelizeInstance.transaction(async transaction => {
         try {
-            const [results, metadata] = await sequelizeInstance.query(query, {transaction});
-            result = Promise.resolve({results, metadata});
+            return UserGroupSchema.create({
+                group_id: groupId,
+                user_id: userId
+            });
         } catch (error) {
             transaction.rollback();
         }
     })
-
-    return await result;
 }
 
 export default {
