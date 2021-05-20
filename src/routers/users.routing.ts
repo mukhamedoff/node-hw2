@@ -22,4 +22,6 @@ usersRouter.get('/:userId', userController.getById);
 usersRouter.put('/:userId', userController.updateUser);
 usersRouter.delete('/:userId', userController.deleteUser);
 
+usersRouter.post('/:userId/addToGroup', userController.addUsersToGroup)
+
 export default usersRouter;
