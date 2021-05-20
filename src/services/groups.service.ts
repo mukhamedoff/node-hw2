@@ -4,11 +4,11 @@ import Group from '../models/groups/group.types';
 import Permission from '../models/permission.type';
 
 const getAllGroups = async () => {
-    return await GroupsSchema.findAll();
+    return GroupsSchema.findAll();
 }
 
 const createGroup = (group: Group) => {
-    GroupsSchema.create(group);
+    return GroupsSchema.create(group);
 }
 
 const updateGroup = async (id: number, data:{ name?:string; permissions?:Array<Permission> }) => {

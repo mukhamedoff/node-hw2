@@ -12,12 +12,12 @@ export class GroupsController {
         return res.json(await GroupsServices.getAllGroups());
     }
 
-    createGroup(req: ValidatedRequest<GroupRequestSchema>, res:any) {
+    async createGroup(req: ValidatedRequest<GroupRequestSchema>, res:any) {
         const group: Group = {
             group_uid: uuidv4(),
             ...req.body
         };
-        GroupsServices.createGroup(group);
+        await GroupsServices.createGroup(group);
         return res.json(group);
     }
 
@@ -47,7 +47,7 @@ export class GroupsController {
         const { groupId } = req.params;
         
         try{
-            const group = GroupsServices.deleteGroup(groupId);
+            const group = await GroupsServices.deleteGroup(groupId);
             return res.json(group || {error: 404, message: "Group is not exists"});
         } catch (err) {
             return {error: 500, message: err};

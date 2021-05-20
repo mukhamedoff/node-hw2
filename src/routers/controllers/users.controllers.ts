@@ -61,7 +61,7 @@ export class UsersController {
         const { userId } = req.params;
 
         try{
-            const result = UsersServices.addUsersToGroup(groupId, userId);
+            const result = await UsersServices.addUsersToGroup(groupId, userId);
             res.json({result});
         } catch (err) {
             return {error: 500, message: err};
