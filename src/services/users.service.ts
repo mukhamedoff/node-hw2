@@ -80,11 +80,22 @@ const addUsersToGroup = async (groupId:number, userId:number) => {
     })
 }
 
+const findLogin = async (username: string, password: string) => {
+    const user = await UsersSchema.findOne({
+        where: {
+            login: username,
+            password
+        }
+    });
+    return user;
+}
+
 export default {
     getAutoSuggestUsers,
     createUser,
     findById,
     updateUser,
     deleteUser,
-    addUsersToGroup
+    addUsersToGroup,
+    findLogin
 }
