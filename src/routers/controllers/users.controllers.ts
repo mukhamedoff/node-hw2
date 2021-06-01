@@ -7,13 +7,10 @@ import { UserRequestSchema } from '../../models/users/users.interface';
 import { v4 as uuidv4 } from 'uuid';
 import UsersServices from '../../services/users.service';
 import { errorLog } from '../../utils/decorators/loggers/errorLog';
-import { authJWT } from '../../utils/decorators/auth';
 
 export class UsersController {
-    // @authJWT()
     @errorLog()
     async getAll(req:any, res:any) {
-        console.log("req.user", req.user);
         const { loginSubstring, limit } = req.query;
         return res.json(await UsersServices.getAutoSuggestUsers(loginSubstring?.toString(), limit ? +limit.toString() : 0));
     }
