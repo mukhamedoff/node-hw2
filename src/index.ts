@@ -1,3 +1,4 @@
+require('dotenv').config();
 import express from 'express';
 import https from 'https';
 import fs from 'fs';
@@ -14,13 +15,13 @@ import errorLogger from './middleware/errorLogger';
 const sslOptions = {
     key: fs.readFileSync('key.pem'),
     cert: fs.readFileSync('cert.pem'),
-    passphrase: 'qwe123asd456zxc789'
+    passphrase: process.env.PASSPHRASE
 };
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT;
 const authController = new AuthController();
 var corsOptions = {
-    origin: 'https://localhost:5000',
+    origin: process.env.ORIGIN,
     optionsSuccessStatus: 200
 }
 

@@ -9,12 +9,12 @@ import GroupsServices from '../../services/groups.service';
 import { errorLog } from '../../utils/decorators/loggers/errorLog';
 
 export class GroupsController {
-    @errorLog()
+    // @errorLog()
     async getAll(req:any, res:any) {
         return res.json(await GroupsServices.getAllGroups());
     }
 
-    @errorLog()
+    // @errorLog()
     async createGroup(req: ValidatedRequest<GroupRequestSchema>, res:any) {
         const group: Group = {
             group_uid: uuidv4(),
@@ -24,7 +24,7 @@ export class GroupsController {
         return res.json(group);
     }
 
-    @errorLog()
+    // @errorLog()
     async updateGroup (req: ValidatedRequest<GroupRequestSchema>, res:any) {
         const { groupId } = req.params;
         const { name, permissions } = req.body;
@@ -37,7 +37,7 @@ export class GroupsController {
         }
     }
 
-    @errorLog()
+    // @errorLog()
     async getById(req:any, res:any) {
         const { groupId } = req.params;
         try{
@@ -48,7 +48,7 @@ export class GroupsController {
         }
     }
 
-    @errorLog()
+    // @errorLog()
     async deleteGroup(req:any, res:any) {
         const { groupId } = req.params;
         

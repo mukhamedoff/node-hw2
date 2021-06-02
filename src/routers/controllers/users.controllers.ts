@@ -9,13 +9,13 @@ import UsersServices from '../../services/users.service';
 import { errorLog } from '../../utils/decorators/loggers/errorLog';
 
 export class UsersController {
-    @errorLog()
+    // @errorLog()
     async getAll(req:any, res:any) {
         const { loginSubstring, limit } = req.query;
         return res.json(await UsersServices.getAutoSuggestUsers(loginSubstring?.toString(), limit ? +limit.toString() : 0));
     }
 
-    @errorLog()
+    // @errorLog()
     createUser(req: ValidatedRequest<UserRequestSchema>, res:any) {
         const user: User = {
             user_uid: uuidv4(),
@@ -26,7 +26,7 @@ export class UsersController {
         return res.json(user);
     }
 
-    @errorLog()
+    // @errorLog()
     async updateUser (req: ValidatedRequest<UserRequestSchema>, res:any) {
         const { userId } = req.params;
         const { login, age, password } = req.body;
@@ -39,7 +39,7 @@ export class UsersController {
         }
     }
 
-    @errorLog()
+    // @errorLog()
     async getById(req:any, res:any) {
         const { userId } = req.params;
         try{
@@ -50,7 +50,7 @@ export class UsersController {
         }
     }
 
-    @errorLog()
+    // @errorLog()
     async deleteUser(req:any, res:any) {
         const { userId } = req.params;
         
@@ -62,7 +62,7 @@ export class UsersController {
         }
     }
 
-    @errorLog()
+    // @errorLog()
     async addUsersToGroup(req:any, res:any) {
         const { groupId } = req.body;
         const { userId } = req.params;
