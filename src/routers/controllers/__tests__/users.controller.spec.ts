@@ -39,6 +39,18 @@ jest.mock('uuid', () => {
     v4: () => 'qwer-1234'
   }
 });
+jest.mock('./../../../utils/decorators/loggers/errorLog.ts', () => ({ errorLog: () => {
+  return (target: any, propertyKey: any, descriptor: PropertyDescriptor) => {
+    // save a reference to the original method
+    const originalMethod = descriptor.value;
+    descriptor.value = async function(...args: any[]) {
+      const result = await originalMethod.apply(this, args);
+      return result;
+    };
+  
+    return descriptor;
+  }; 
+}}));
 
 describe('User controller entity', () => {
   let usersController: UsersController;
