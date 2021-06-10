@@ -5,9 +5,7 @@ import UsersServices from '../../services/users.service'
 export class AuthController {
   async login(req:any, res:any) {
     const { username, password } = req.body;
-    const user = await UsersServices.findLogin(username, password);
-    const dataValue: User = user?.toJSON() as User;
-
+    const dataValue: User = await UsersServices.findLogin(username, password);
     if (dataValue) {
         const accessToken = AuthService.login({ username: dataValue.login, id: dataValue.user_uid });
   

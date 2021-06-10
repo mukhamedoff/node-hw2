@@ -5,6 +5,9 @@ import {
     UserGroup as UserGroupSchema
 } from '../data-access/postgresql';
 import User from '../models/users/user.type';
+import bcrypt from 'bcrypt';
+
+const salt ='sDr34#pORtt';
 
 const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => { //User[]
     let options = {
@@ -23,8 +26,19 @@ const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => 
     return await UsersSchema.findAll(options);
 }
 
-const createUser = (user: User) => {
-    UsersSchema.create(user);
+const createUser = async (user: User) => {
+    const bcryptPromise = new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function(err, salt) {
+            bcrypt.hash(user.password, salt, async function(err, hash) {
+                if (hash) {
+                    user.password = hash;
+                    const userDb = await UsersSchema.create(user);
+                    resolve(userDb);
+                }
+            });
+        });
+    });
+    return await bcryptPromise;
 }
 
 const updateUser = async (
@@ -32,6 +46,17 @@ const updateUser = async (
     data:{ login?:string; age?:number; password?:string; isdeleted?:boolean },
     options?: {}
     ) => {
+    const bcryptPromise = new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function(err, salt) {
+            bcrypt.hash(data.password as string, salt, function(err, hash) {
+                if (hash) {
+                    data.password = hash;
+                    resolve(hash);
+                }
+            });
+        });
+    });
+    await bcryptPromise;
     return await UsersSchema.update(data, {
         where: {
             user_uid: id
@@ -81,12 +106,16 @@ const addUsersToGroup = async (groupId:number, userId:number) => {
 }
 
 const findLogin = async (username: string, password: string) => {
-    const user = await UsersSchema.findOne({
+    const userDb = await UsersSchema.findOne({
         where: {
-            login: username,
-            password
+            login: username
         }
     });
+    const user = userDb?.toJSON() as User;
+    const match = await bcrypt.compare(password, user.password);
+    if(!match) {
+        throw new Error('Incorrect login or password');
+    }
     return user;
 }
 
