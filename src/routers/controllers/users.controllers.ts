@@ -16,14 +16,14 @@ export class UsersController {
     }
 
     @errorLog()
-    createUser(req: ValidatedRequest<UserRequestSchema>, res:any) {
+    async createUser(req: ValidatedRequest<UserRequestSchema>, res:any) {
         const user: User = {
             user_uid: uuidv4(),
             ...req.body,
             isdeleted: false
         };
-        UsersServices.createUser(user);
-        return res.json(user);
+        const userDB = await UsersServices.createUser(user);
+        return res.json(userDB);
     }
 
     @errorLog()
