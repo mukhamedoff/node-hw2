@@ -1,7 +1,8 @@
+require('dotenv').config();
 import { Sequelize, DataTypes } from 'sequelize';
 
-export const sequelize = new Sequelize('nodejs-mentoring', 'postgres', 'aw3se4', {
-    host: 'localhost',
+export const sequelize = new Sequelize(process.env.DB_NAME as string, process.env.DB_LOGIN as string, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
     dialect: 'postgres'
 });
 export const Users = sequelize.define('Users', {
