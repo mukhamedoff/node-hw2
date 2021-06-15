@@ -5,6 +5,7 @@ import * as Joi from 'joi'
 import {
     createValidator
 } from 'express-joi-validation';
+import { authenticateJWT } from '../middleware/authMiddleware';
 
 const userController = new UsersController();
 const usersRouter = Router();
@@ -15,13 +16,13 @@ const bodySchema = Joi.object({
     age: Joi.number().integer().min(4).max(130).required()
 });
 
-usersRouter.get('/', userController.getAll);
-usersRouter.post('/', validator.body(bodySchema), userController.createUser);
+usersRouter.get('/', authenticateJWT, userController.getAll);
+usersRouter.post('/', [authenticateJWT, validator.body(bodySchema)], userController.createUser);
 
-usersRouter.get('/:userId', userController.getById);
-usersRouter.put('/:userId', userController.updateUser);
-usersRouter.delete('/:userId', userController.deleteUser);
+usersRouter.get('/:userId', authenticateJWT, userController.getById);
+usersRouter.put('/:userId', authenticateJWT, userController.updateUser);
+usersRouter.delete('/:userId',authenticateJWT, userController.deleteUser);
 
-usersRouter.post('/:userId/addToGroup', userController.addUsersToGroup)
+usersRouter.post('/:userId/addToGroup', authenticateJWT, userController.addUsersToGroup)
 
 export default usersRouter;

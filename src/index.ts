@@ -2,7 +2,9 @@ import express from 'express';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
+import cors from 'cors';
 
+import { AuthController } from './routers/controllers/auth.controller';
 import usersRouter from './routers/users.routing';
 import groupsRouter from './routers/groups.routing';
 
@@ -16,13 +18,20 @@ const sslOptions = {
 };
 const app = express();
 const PORT = 5000;
+const authController = new AuthController();
+var corsOptions = {
+    origin: 'https://localhost:5000',
+    optionsSuccessStatus: 200
+}
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(logger);
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname + '/index.html'));
 })
+app.post('/login', authController.login);
 app.use('/users', usersRouter);
 app.use('/groups', groupsRouter);
 

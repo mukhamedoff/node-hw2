@@ -1,6 +1,13 @@
 import { Sequelize, Op } from 'sequelize';
-import { Users as UsersSchema, sequelize as sequelizeInstance} from '../data-access/postgresql';
+import {
+    Users as UsersSchema,
+    sequelize as sequelizeInstance,
+    UserGroup as UserGroupSchema
+} from '../data-access/postgresql';
 import User from '../models/users/user.type';
+import bcrypt from 'bcrypt';
+
+const salt ='sDr34#pORtt';
 
 const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => { //User[]
     let options = {
@@ -19,8 +26,19 @@ const getAutoSuggestUsers = async (loginSubstring:string = '', limit:number) => 
     return await UsersSchema.findAll(options);
 }
 
-const createUser = (user: User) => {
-    UsersSchema.create(user);
+const createUser = async (user: User) => {
+    const bcryptPromise = new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function(err, salt) {
+            bcrypt.hash(user.password, salt, async function(err, hash) {
+                if (hash) {
+                    user.password = hash;
+                    const userDb = await UsersSchema.create(user);
+                    resolve(userDb);
+                }
+            });
+        });
+    });
+    return await bcryptPromise;
 }
 
 const updateUser = async (
@@ -28,6 +46,17 @@ const updateUser = async (
     data:{ login?:string; age?:number; password?:string; isdeleted?:boolean },
     options?: {}
     ) => {
+    const bcryptPromise = new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, function(err, salt) {
+            bcrypt.hash(data.password as string, salt, function(err, hash) {
+                if (hash) {
+                    data.password = hash;
+                    resolve(hash);
+                }
+            });
+        });
+    });
+    await bcryptPromise;
     return await UsersSchema.update(data, {
         where: {
             user_uid: id
@@ -37,22 +66,22 @@ const updateUser = async (
 }
 
 const deleteUser = async (id: number) => {
-    let result = null;
-    const query = `
-    DELETE FROM user_group WHERE user_id='${id}';
-    `;
-
-    sequelizeInstance.transaction(async transaction => {
-        try {
-            await sequelizeInstance.query(query, { transaction });
-            await updateUser(id, { isdeleted: true }, { transaction });
-            result = Promise.resolve({ message: "Delete is done" });
-        } catch (error) {
-            transaction.rollback();
-        }
+    return new Promise((resolve, reject) => {
+        sequelizeInstance.transaction(async transaction => {
+            try {
+                await UserGroupSchema.destroy({
+                    where: {
+                        user_id: id
+                    },
+                    transaction
+                });
+                await updateUser(id, { isdeleted: true }, { transaction });
+                resolve({ message: "Delete is done" });
+            } catch (error) {
+                transaction.rollback();
+            }
+        });
     })
-
-    return await result;
 }
 
 const findById = async (id: number) => {
@@ -64,22 +93,30 @@ const findById = async (id: number) => {
 }
 
 const addUsersToGroup = async (groupId:number, userId:number) => {
-    let result = null;
-    const query = `
-    INSERT INTO user_group (group_id, user_id)
-    VALUES ('${groupId}', '${userId}')
-    `;
-
     sequelizeInstance.transaction(async transaction => {
         try {
-            const [results, metadata] = await sequelizeInstance.query(query, {transaction});
-            result = Promise.resolve({results, metadata});
+            return UserGroupSchema.create({
+                group_id: groupId,
+                user_id: userId
+            });
         } catch (error) {
             transaction.rollback();
         }
     })
+}
 
-    return await result;
+const findLogin = async (username: string, password: string) => {
+    const userDb = await UsersSchema.findOne({
+        where: {
+            login: username
+        }
+    });
+    const user = userDb?.toJSON() as User;
+    const match = await bcrypt.compare(password, user.password);
+    if(!match) {
+        throw new Error('Incorrect login or password');
+    }
+    return user;
 }
 
 export default {
@@ -88,5 +125,6 @@ export default {
     findById,
     updateUser,
     deleteUser,
-    addUsersToGroup
+    addUsersToGroup,
+    findLogin
 }
